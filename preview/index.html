@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Firefox Extension Kill Switch</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #07111f;
+      --card: #0f172a;
+      --line: #1e293b;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --red: #ef4444;
+      --green: #22c55e;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh;
+      font-family: "Segoe UI", system-ui, sans-serif;
+      background:
+        radial-gradient(900px 400px at 10% -10%, #1e3a5f 0%, transparent 50%),
+        radial-gradient(700px 320px at 110% 10%, #3f1d24 0%, transparent 45%),
+        var(--bg);
+      color: var(--text);
+    }
+    .wrap {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 48px 20px 80px;
+    }
+    .kicker {
+      color: #fca5a5;
+      font-size: 12px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+    h1 {
+      font-size: 42px;
+      line-height: 1.1;
+      margin: 10px 0 14px;
+    }
+    .lead {
+      color: var(--muted);
+      font-size: 17px;
+      max-width: 620px;
+      line-height: 1.55;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      gap: 28px;
+      margin-top: 36px;
+      align-items: start;
+    }
+    .phone {
+      background: #020617;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 16px;
+      box-shadow: 0 20px 50px rgba(0,0,0,.35);
+    }
+    .popup {
+      width: 100%;
+      background: #0f172a;
+      border-radius: 14px;
+      padding: 16px;
+    }
+    .header { display: flex; gap: 10px; align-items: center; }
+    .header h2 { font-size: 16px; }
+    .header p { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin: 14px 0; }
+    .stat {
+      background: #111827;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px 8px;
+      text-align: center;
+    }
+    .stat b { display: block; font-size: 18px; }
+    .stat span { display: block; font-size: 11px; color: var(--muted); text-transform: uppercase; margin-top: 2px; }
+    .switch {
+      width: 100%;
+      border: 0;
+      border-radius: 14px;
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      color: #fff;
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      background: linear-gradient(180deg, #14532d, #166534);
+    }
+    .switch.stopped { background: linear-gradient(180deg, #7f1d1d, #991b1b); }
+    .track {
+      width: 52px; height: 28px; border-radius: 999px;
+      background: rgba(255,255,255,.18); position: relative; flex-shrink: 0;
+    }
+    .knob {
+      width: 22px; height: 22px; border-radius: 50%; background: #fff;
+      position: absolute; top: 3px; left: 3px; transition: left .18s ease;
+    }
+    .switch.stopped .knob { left: 27px; }
+    .hint { margin-top: 12px; font-size: 11px; color: var(--muted); line-height: 1.45; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 22px;
+    }
+    .card h3 { font-size: 18px; margin-bottom: 10px; }
+    ol { padding-left: 18px; color: var(--muted); }
+    ol li { margin: 8px 0; line-height: 1.45; }
+    code {
+      background: #1e293b;
+      padding: 1px 6px;
+      border-radius: 6px;
+      color: #e2e8f0;
+      font-size: 13px;
+    }
+    .pills { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
+    .pill {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    @media (max-width: 800px) {
+      .grid { grid-template-columns: 1fr; }
+      h1 { font-size: 32px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <p class="kicker">Firefox add-on</p>
+    <h1>Extension Kill Switch</h1>
+    <p class="lead">
+      Tap Stop and every other Firefox extension turns off. Tap Start and only the ones that were previously enabled come back.
+    </p>
+    <div class="grid">
+      <div class="phone">
+        <div class="popup">
+          <div class="header">
+            <svg viewBox="0 0 48 48" width="28" height="28" aria-hidden="true">
+              <rect x="4" y="4" width="40" height="40" rx="10" fill="#1e293b"/>
+              <path d="M16 24h16" stroke="#f8fafc" stroke-width="3.5" stroke-linecap="round"/>
+              <circle cx="24" cy="24" r="11" fill="none" stroke="#ef4444" stroke-width="3"/>
+            </svg>
+            <div>
+              <h2>Kill Switch</h2>
+              <p id="statusLabel">Extensions are running</p>
+            </div>
+          </div>
+          <div class="stats">
+            <div class="stat"><b id="enabledCount">7</b><span>Enabled</span></div>
+            <div class="stat"><b>7</b><span>Total</span></div>
+            <div class="stat"><b id="savedCount">0</b><span>Saved</span></div>
+          </div>
+          <button class="switch running" id="toggleBtn" type="button">
+            <span class="track"><span class="knob"></span></span>
+            <span id="toggleText">Stop</span>
+          </button>
+          <p class="hint" id="hint">Press Stop to disable every other extension. This add-on stays on.</p>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Install in Firefox</h3>
+        <ol>
+          <li>Open Firefox and go to <code>about:debugging#/runtime/this-firefox</code></li>
+          <li>Click <b>Load Temporary Add-on</b></li>
+          <li>Select <code>extension/manifest.json</code> from this project</li>
+          <li>Click the toolbar icon and use the Stop / Start switch</li>
+        </ol>
+        <div class="pills">
+          <span class="pill">Stops all other add-ons</span>
+          <span class="pill">Remembers previous state</span>
+          <span class="pill">Restores only former ones</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    const btn = document.getElementById("toggleBtn");
+    const text = document.getElementById("toggleText");
+    const status = document.getElementById("statusLabel");
+    const enabled = document.getElementById("enabledCount");
+    const saved = document.getElementById("savedCount");
+    const hint = document.getElementById("hint");
+    let stopped = false;
+    btn.addEventListener("click", () => {
+      stopped = !stopped;
+      btn.classList.toggle("stopped", stopped);
+      btn.classList.toggle("running", !stopped);
+      text.textContent = stopped ? "Start" : "Stop";
+      status.textContent = stopped ? "All other extensions are stopped" : "Extensions are running";
+      enabled.textContent = stopped ? "0" : "7";
+      saved.textContent = stopped ? "7" : "0";
+      hint.textContent = stopped
+        ? "Press Start to turn back on the extensions that were enabled before."
+        : "Press Stop to disable every other extension. This add-on stays on.";
+    });
+  </script>
+</body>
+</html>
